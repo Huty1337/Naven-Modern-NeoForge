@@ -1,0 +1,24 @@
+license="All Rights Reserved"
+
+[[mods]]
+modId="naven"
+version="1"
+displayName="Naven-Modern"
+authors="Huty"
+description='''Naven'''
+[[mixins]]
+config="Naven-Modern.mixins.json"
+
+[[dependencies.naven]]
+modId="neoforge"
+type="required"
+versionRange="[21.10.64,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.naven]]
+modId="minecraft"
+type="required"
+versionRange="[1.21.10]"
+ordering="NONE"
+side="BOTH"
