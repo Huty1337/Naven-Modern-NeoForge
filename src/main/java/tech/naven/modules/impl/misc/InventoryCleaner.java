@@ -446,7 +446,7 @@ public class InventoryCleaner extends Module {
          return false;
       }
 
-      if (this.actionCooldown < 15) {
+      if (this.actionCooldown < 5) {
          return true;
       }
 
