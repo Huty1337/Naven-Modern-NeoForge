@@ -18,6 +18,11 @@ public class MixinClientLevel {
       )
    )
    public void hookSkipTicks(Entity instance) {
+      if (Naven.skipTicks > 0 && instance == Minecraft.getInstance().player) {
+         Naven.skipTicks--;
+         return;
+      }
+
       if (!Naven.skipTasks.isEmpty() && instance == Minecraft.getInstance().player) {
          Runnable task = Naven.skipTasks.poll();
          if (task != null) {

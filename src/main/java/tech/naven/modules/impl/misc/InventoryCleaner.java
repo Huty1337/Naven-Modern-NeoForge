@@ -17,7 +17,7 @@ import tech.naven.ui.notification.NotificationLevel;
 import tech.naven.utils.InventoryUtils;
 import tech.naven.utils.MoveUtils;
 import tech.naven.utils.NetworkUtils;
-import tech.naven.utils.TickTimeHelper;
+import tech.naven.utils.TimeHelper;
 import tech.naven.values.ValueBuilder;
 import tech.naven.values.impl.BooleanValue;
 import tech.naven.values.impl.FloatValue;
@@ -54,15 +54,15 @@ import org.apache.commons.lang3.tuple.Pair;
    category = Category.MISC
 )
 public class InventoryCleaner extends Module {
-   private static final TickTimeHelper timer = new TickTimeHelper();
+   private static final TimeHelper timer = new TimeHelper();
    private int sprintStopCooldown = 0;
    private boolean lastSprintState = false;
    private int actionCooldown = 999;
-   private final FloatValue delay = ValueBuilder.create(this, "Delay (Ticks)")
-      .setDefaultFloatValue(3.0F)
-      .setFloatStep(1.0F)
-      .setMinFloatValue(3.0F)
-      .setMaxFloatValue(10.0F)
+   private final FloatValue delay = ValueBuilder.create(this, "Delay (ms)")
+      .setDefaultFloatValue(110.0F)
+      .setFloatStep(10.0F)
+      .setMinFloatValue(0.0F)
+      .setMaxFloatValue(500.0F)
       .build()
       .getFloatValue();
    ModeValue offhandItems = ValueBuilder.create(this, "Offhand Items")
@@ -409,6 +409,7 @@ public class InventoryCleaner extends Module {
    public boolean isPerformingSilentAction() {
       return this.isEnabled()
          && !this.inventoryOnly.getCurrentValue()
+         && !this.shouldPauseForAction()
          && (this.hasPendingActions() || this.sprintStopCooldown > 0 || this.inventoryOpen);
    }
 
@@ -445,8 +446,8 @@ public class InventoryCleaner extends Module {
          return false;
       }
 
-      if (this.shouldPauseForAction()) {
-         return false;
+      if (this.actionCooldown < 15) {
+         return true;
       }
 
       if (this.autoArmor.getCurrentValue()) {
@@ -513,6 +514,12 @@ public class InventoryCleaner extends Module {
                return true;
             }
          }
+      }
+
+      if (this.switchGoldenApple.getCurrentValue()
+         && !this.offhandItems.isCurrentMode("Golden Apple")
+         && this.needsItemSwap((int)(this.goldenAppleSlot.getCurrentValue() - 1.0F), Items.GOLDEN_APPLE)) {
+         return true;
       }
 
       if (this.switchBlock.getCurrentValue()) {

@@ -40,6 +40,7 @@ public class Naven {
    private final FileManager fileManager;
    private final NotificationManager notificationManager;
    public static float TICK_TIMER = 1.0F;
+   public static int skipTicks = 0;
    public static Queue<Runnable> skipTasks = new ConcurrentLinkedQueue<>();
 
    private Naven() {

@@ -16,6 +16,6 @@ public class MixinChatComponent {
       ordinal = 0
    )
    private Component naven$protectChatMessage(Component message) {
-      return NameProtect.getNameJson(message);
+      return NameProtect.rewriteComponent(message);
    }
 }

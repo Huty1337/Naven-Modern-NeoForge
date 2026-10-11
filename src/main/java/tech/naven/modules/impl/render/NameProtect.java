@@ -3,18 +3,17 @@ package tech.naven.modules.impl.render;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonParser;
+import com.mojang.serialization.JsonOps;
 import tech.naven.events.api.EventTarget;
 import tech.naven.events.api.types.EventType;
 import tech.naven.events.impl.EventRenderScoreboard;
 import tech.naven.events.impl.EventRenderTabOverlay;
+import tech.naven.events.impl.EventRunTicks;
 import tech.naven.events.impl.EventSetTitle;
 import tech.naven.modules.Category;
 import tech.naven.modules.Module;
 import tech.naven.modules.ModuleInfo;
-import com.mojang.serialization.JsonOps;
-import java.util.regex.Pattern;
+import tech.naven.utils.TextReplacer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.world.entity.Entity;
@@ -28,26 +27,82 @@ public class NameProtect extends Module {
    public static NameProtect instance;
 
    private static final String REPLACEMENT_TEXT = "§dHidden§f";
-   private static final String REPLACEMENT_COLOR = "light_purple";
+   private static final String REPLACEMENT_PLAIN = "Hidden";
+
+   private static String lastPlayerName;
 
    public NameProtect() {
       instance = this;
    }
 
-   public static String getName(String string) {
-      if (!instance.isEnabled() || mc.player == null) {
-         return string;
-      } else {
-         String playerName = mc.player.getName().getString();
-         if (!string.contains(playerName)) {
-            return string;
-         }
-         return string.replace(playerName, REPLACEMENT_TEXT);
+   @EventTarget(4)
+   public void onTick(EventRunTicks event) {
+      if (event.getType() == EventType.PRE) {
+         this.refresh();
       }
    }
 
-   public static Component getNameJson(Component in) {
-      if (in == null || instance == null || !instance.isEnabled() || mc.player == null) {
+   @Override
+   public void onEnable() {
+      this.refresh();
+   }
+
+   @Override
+   public void onDisable() {
+      lastPlayerName = null;
+      TextReplacer.setName(null, null, null);
+   }
+
+   private void refresh() {
+      if (!this.isEnabled() || mc.player == null) {
+         return;
+      }
+
+      String playerName = mc.player.getName().getString();
+      if (playerName.isEmpty() || playerName.equals(lastPlayerName)) {
+         return;
+      }
+
+      lastPlayerName = playerName;
+      if (REPLACEMENT_PLAIN.contains(playerName)) {
+         TextReplacer.setName(null, null, null);
+         return;
+      }
+
+      TextReplacer.setName(playerName, REPLACEMENT_PLAIN, REPLACEMENT_TEXT);
+   }
+
+   public static String getName(String string) {
+      return TextReplacer.replace(string);
+   }
+
+   public static boolean active() {
+      return instance != null && instance.isEnabled() && !TextReplacer.isEmpty();
+   }
+
+   public static Component hookNameTag(Entity entity, Component in) {
+      if (in == null || instance == null || !instance.isEnabled()) {
+         return in;
+      }
+
+      if (mc != null && mc.player != null && entity == mc.player) {
+         return Component.literal(REPLACEMENT_TEXT);
+      }
+
+      String flat = in.getString();
+      if (!TextReplacer.contains(flat)) {
+         return in;
+      }
+
+      return Component.literal(TextReplacer.replace(flat)).setStyle(in.getStyle());
+   }
+
+   public static Component rewriteComponent(Component in) {
+      if (in == null || TextReplacer.isEmpty()) {
+         return in;
+      }
+
+      if (!TextReplacer.contains(in.getString())) {
          return in;
       }
 
@@ -56,35 +111,24 @@ public class NameProtect extends Module {
          return in;
       }
 
-      String json = root.toString();
-      String replaced = getName(json);
-      if (replaced.equals(json)) {
+      root = normalizeTextElement(root);
+      boolean changed = false;
+      String nameFrom = TextReplacer.getNameFrom();
+      if (nameFrom != null) {
+         changed = replaceInJson(root, nameFrom, REPLACEMENT_PLAIN, "light_purple");
+      }
+
+      String serverFrom = TextReplacer.getServerFrom();
+      if (serverFrom != null) {
+         changed |= replaceInJson(root, serverFrom, TextReplacer.getServerToPlain(), "light_purple");
+      }
+
+      if (!changed) {
          return in;
       }
 
-      JsonElement patched;
-      try {
-         patched = JsonParser.parseString(replaced);
-      } catch (JsonParseException e) {
-         return in;
-      }
-
-      Component out = ComponentSerialization.CODEC.parse(JsonOps.INSTANCE, patched).result().orElse(null);
+      Component out = ComponentSerialization.CODEC.parse(JsonOps.INSTANCE, root).result().orElse(null);
       return out == null ? in : out;
-   }
-
-   public static Component hookNameTag(Entity entity, Component in) {
-      if (in == null) {
-         return null;
-      }
-      NameProtect nameProtect = instance;
-      if (nameProtect == null || !nameProtect.isEnabled()) {
-         return in;
-      }
-      if (mc != null && mc.player != null && entity == mc.player) {
-         return Component.literal("§dHidden§f");
-      }
-      return protect(in);
    }
 
    private static JsonObject textElement(String text) {
@@ -100,17 +144,15 @@ public class NameProtect extends Module {
       return obj;
    }
 
-   private static boolean replaceInJson(JsonElement element, Pattern pattern, String replacementText, String replacementColor) {
+   private static boolean replaceInJson(JsonElement element, String from, String replacementText, String replacementColor) {
       if (element == null || element.isJsonNull()) {
          return false;
       }
 
       boolean changed = false;
-
       if (element.isJsonArray()) {
-         JsonArray array = element.getAsJsonArray();
-         for (JsonElement child : array) {
-            changed |= replaceInJson(child, pattern, replacementText, replacementColor);
+         for (JsonElement child : element.getAsJsonArray()) {
+            changed |= replaceInJson(child, from, replacementText, replacementColor);
          }
          return changed;
       }
@@ -120,18 +162,15 @@ public class NameProtect extends Module {
       }
 
       JsonObject obj = element.getAsJsonObject();
-
       if (obj.has("extra") && obj.get("extra").isJsonArray()) {
-         JsonArray extra = obj.getAsJsonArray("extra");
-         for (JsonElement child : extra) {
-            changed |= replaceInJson(child, pattern, replacementText, replacementColor);
+         for (JsonElement child : obj.getAsJsonArray("extra")) {
+            changed |= replaceInJson(child, from, replacementText, replacementColor);
          }
       }
 
       if (obj.has("with") && obj.get("with").isJsonArray()) {
-         JsonArray with = obj.getAsJsonArray("with");
-         for (JsonElement child : with) {
-            changed |= replaceInJson(child, pattern, replacementText, replacementColor);
+         for (JsonElement child : obj.getAsJsonArray("with")) {
+            changed |= replaceInJson(child, from, replacementText, replacementColor);
          }
       }
 
@@ -140,31 +179,25 @@ public class NameProtect extends Module {
       }
 
       String text = obj.get("text").getAsString();
-      var matcher = pattern.matcher(text);
-      if (!matcher.find()) {
+      int hit = text.indexOf(from);
+      if (hit < 0) {
          return changed;
       }
 
-      JsonArray existingExtra = null;
-      if (obj.has("extra") && obj.get("extra").isJsonArray()) {
-         existingExtra = obj.getAsJsonArray("extra");
-      }
-
+      JsonArray existingExtra = obj.has("extra") && obj.get("extra").isJsonArray() ? obj.getAsJsonArray("extra") : null;
       JsonArray newExtra = new JsonArray();
-      int last = 0;
-
-      String firstText = text.substring(0, matcher.start());
-      obj.addProperty("text", firstText);
-
+      obj.addProperty("text", text.substring(0, hit));
       newExtra.add(coloredTextElement(replacementText, replacementColor));
-      last = matcher.end();
-      while (matcher.find()) {
-         String between = text.substring(last, matcher.start());
+      int last = hit + from.length();
+      int next;
+      while ((next = text.indexOf(from, last)) >= 0) {
+         String between = text.substring(last, next);
          if (!between.isEmpty()) {
             newExtra.add(textElement(between));
          }
+
          newExtra.add(coloredTextElement(replacementText, replacementColor));
-         last = matcher.end();
+         last = next + from.length();
       }
 
       String tail = text.substring(last);
@@ -180,32 +213,6 @@ public class NameProtect extends Module {
 
       obj.add("extra", newExtra);
       return true;
-   }
-
-   public static Component protect(Component in) {
-      if (in == null || instance == null || !instance.isEnabled() || mc.player == null) {
-         return in;
-      }
-
-      String playerName = mc.player.getName().getString();
-      if (playerName.isEmpty() || !in.getString().contains(playerName)) {
-         return in;
-      }
-
-      Pattern pattern = Pattern.compile(Pattern.quote(playerName));
-      JsonElement root = ComponentSerialization.CODEC.encodeStart(JsonOps.INSTANCE, in).result().orElse(null);
-      if (root == null) {
-         return in;
-      }
-
-      root = normalizeTextElement(root);
-      boolean changed = replaceInJson(root, pattern, REPLACEMENT_TEXT, REPLACEMENT_COLOR);
-      if (!changed) {
-         return in;
-      }
-
-      Component out = ComponentSerialization.CODEC.parse(JsonOps.INSTANCE, root).result().orElse(null);
-      return out == null ? in : out;
    }
 
    private static JsonElement normalizeTextElement(JsonElement element) {
@@ -240,20 +247,31 @@ public class NameProtect extends Module {
       }
    }
 
+   private static Component flatReplace(Component in) {
+      if (in == null || instance == null || !instance.isEnabled()) {
+         return in;
+      }
+
+      String flat = in.getString();
+      if (!TextReplacer.contains(flat)) {
+         return in;
+      }
+
+      return Component.literal(TextReplacer.replace(flat)).setStyle(in.getStyle());
+   }
+
    @EventTarget
    public void onRenderTab(EventRenderTabOverlay e) {
-      Component in = e.getComponent();
-      Component out = protect(in);
-      if (out != in) {
+      Component out = flatReplace(e.getComponent());
+      if (out != e.getComponent()) {
          e.setComponent(out);
       }
    }
 
    @EventTarget
    public void onRenderScoreboard(EventRenderScoreboard e) {
-      Component in = e.getComponent();
-      Component out = protect(in);
-      if (out != in) {
+      Component out = flatReplace(e.getComponent());
+      if (out != e.getComponent()) {
          e.setComponent(out);
       }
    }
@@ -264,9 +282,8 @@ public class NameProtect extends Module {
          return;
       }
 
-      Component in = e.getTitle();
-      Component out = protect(in);
-      if (out != in) {
+      Component out = flatReplace(e.getTitle());
+      if (out != e.getTitle()) {
          e.setTitle(out);
       }
    }

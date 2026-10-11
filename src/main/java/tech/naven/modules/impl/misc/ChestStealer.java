@@ -8,7 +8,7 @@ import tech.naven.modules.Module;
 import tech.naven.modules.ModuleInfo;
 import tech.naven.modules.impl.move.Scaffold;
 import tech.naven.utils.InventoryUtils;
-import tech.naven.utils.TickTimeHelper;
+import tech.naven.utils.TimeHelper;
 import tech.naven.values.ValueBuilder;
 import tech.naven.values.impl.BooleanValue;
 import tech.naven.values.impl.FloatValue;
@@ -35,19 +35,19 @@ import net.minecraft.world.item.Items;
    category = Category.MISC
 )
 public class ChestStealer extends Module {
-   private static final TickTimeHelper timer = new TickTimeHelper();
-   private final FloatValue delay = ValueBuilder.create(this, "Delay (Ticks)")
-      .setDefaultFloatValue(3.0F)
-      .setFloatStep(1.0F)
-      .setMinFloatValue(3.0F)
-      .setMaxFloatValue(10.0F)
+   private static final TimeHelper timer = new TimeHelper();
+   private final FloatValue delay = ValueBuilder.create(this, "Delay (ms)")
+      .setDefaultFloatValue(110.0F)
+      .setFloatStep(10.0F)
+      .setMinFloatValue(0.0F)
+      .setMaxFloatValue(500.0F)
       .build()
       .getFloatValue();
    private final BooleanValue pickEnderChest = ValueBuilder.create(this, "Ender Chest").setDefaultBooleanValue(false).build().getBooleanValue();
    private Screen lastTickScreen;
 
    public static boolean isWorking() {
-      return !timer.delay(3);
+      return !timer.delay(150.0);
    }
 
    @EventTarget(1)

@@ -10,6 +10,7 @@ import tech.naven.modules.impl.combat.AntiBots;
 import tech.naven.modules.impl.combat.AttackCrystal;
 import tech.naven.modules.impl.combat.Aura;
 import tech.naven.modules.impl.combat.AutoClicker;
+import tech.naven.modules.impl.combat.Critical;
 import tech.naven.modules.impl.combat.Velocity;
 import tech.naven.modules.impl.misc.AntiFireball;
 import tech.naven.modules.impl.misc.AutoTools;
@@ -83,6 +84,7 @@ public class ModuleManager {
    private void initModules() {
       this.registerModule(
          new Aura(),
+         new Critical(),
          new HUD(),
          new Velocity(),
          new NameTags(),
