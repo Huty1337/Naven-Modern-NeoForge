@@ -1,0 +1,3 @@
+#include "resource.h"
+
+IDR_NILORE_JAR RCDATA "nilore.jar"
