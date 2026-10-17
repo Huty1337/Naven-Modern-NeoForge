@@ -10,7 +10,7 @@ import tech.naven.modules.Module;
 import tech.naven.modules.ModuleInfo;
 import tech.naven.utils.BlinkingPlayer;
 import tech.naven.utils.InventoryUtils;
-import tech.naven.utils.RenderUtils;
+import tech.naven.utils.RoundedRectRenderState;
 import tech.naven.values.ValueBuilder;
 import tech.naven.values.impl.BooleanValue;
 import net.minecraft.client.gui.GuiGraphics;
@@ -20,6 +20,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Items;
+import org.joml.Matrix3x2f;
 import org.joml.Matrix3x2fStack;
 
 @ModuleInfo(
@@ -70,26 +71,38 @@ public class Compass extends Module {
       this.draw(e.getGuiGraphics());
    }
 
+   private static final float ANGLE_OFFSET = 0.0F;
+
    private void draw(GuiGraphics guiGraphics) {
       if (this.hasCompass || !this.compassOnly.getCurrentValue()) {
          if (!this.hasPlayer() || !this.noPlayerOnly.getCurrentValue()) {
             if (this.spawnPosition != null) {
-               float yaw = (float)(
-                  Math.toDegrees(Math.atan2((double)this.spawnPosition.getZ() - this.renderZ, (double)this.spawnPosition.getX() - this.renderX))
-                     - 90.0
-                     - (double)this.renderYaw
-               );
-               float x = (float)mc.getWindow().getGuiScaledWidth() / 2.0F;
-               float y = (float)mc.getWindow().getGuiScaledHeight() / 2.0F;
+               double dx = (double)this.spawnPosition.getX() - this.renderX;
+               double dz = (double)this.spawnPosition.getZ() - this.renderZ;
+               if (Math.abs(dx) + Math.abs(dz) < 0.01) {
+                  return;
+               }
+
+               float bearing = (float)Math.toDegrees(Math.atan2(-dx, dz));
+               float angle = Mth.wrapDegrees(bearing - this.renderYaw + ANGLE_OFFSET);
+               float centerX = (float)mc.getWindow().getGuiScaledWidth() / 2.0F;
+               float centerY = (float)mc.getWindow().getGuiScaledHeight() / 2.0F;
                Matrix3x2fStack pose = guiGraphics.pose();
-                pose.pushMatrix();
-                pose.translate(x, y);
-                pose.rotate((float)Math.toRadians((double)yaw));
-                pose.translate(-x, -y);
-                RenderUtils.drawTracer(guiGraphics, x, y - 45.0F, 10.0F, 2.0F, 1.0F, -1);
-                pose.popMatrix();
+               pose.pushMatrix();
+               pose.translate(centerX, centerY);
+               pose.rotate((float)Math.toRadians((double)angle));
+               pose.translate(-centerX, -centerY);
+               this.drawArrow(guiGraphics, centerX, centerY - 45.0F, 10.0F, 5.0F, -1);
+               pose.popMatrix();
             }
          }
       }
+   }
+
+   private void drawArrow(GuiGraphics guiGraphics, float tipX, float tipY, float size, float halfWidth, int color) {
+      float[] perimeter = new float[]{tipX, tipY, tipX - halfWidth, tipY + size, tipX + halfWidth, tipY + size};
+      guiGraphics.submitGuiElementRenderState(
+         new RoundedRectRenderState(perimeter, new Matrix3x2f(guiGraphics.pose()), color, guiGraphics.peekScissorStack())
+      );
    }
 }

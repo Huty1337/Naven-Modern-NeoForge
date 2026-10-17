@@ -16,7 +16,6 @@ import tech.naven.modules.impl.combat.GhostHand;
 import tech.naven.modules.impl.combat.MidPearl;
 import tech.naven.modules.impl.combat.Velocity;
 import tech.naven.modules.impl.misc.AntiFireball;
-import tech.naven.modules.impl.misc.AutoHelper;
 import tech.naven.modules.impl.misc.AutoTools;
 import tech.naven.modules.impl.misc.ChestStealer;
 import tech.naven.modules.impl.misc.ClientFriend;
@@ -142,7 +141,6 @@ public class ModuleManager {
          new AimAssist(),
          new MotionBlur(),
          new Helper(),
-         new AutoHelper(),
          new NoSlow(),
          new LongJump()
       );

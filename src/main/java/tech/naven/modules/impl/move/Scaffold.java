@@ -163,20 +163,6 @@ public class Scaffold extends Module {
       .setMaxFloatValue(360.0F)
       .build()
       .getFloatValue();
-   FloatValue turnSpeed = ValueBuilder.create(this, "Turn Speed")
-      .setDefaultFloatValue(180.0F)
-      .setFloatStep(5.0F)
-      .setMinFloatValue(0.0F)
-      .setMaxFloatValue(360.0F)
-      .build()
-      .getFloatValue();
-   FloatValue returnSpeed = ValueBuilder.create(this, "Return Speed")
-      .setDefaultFloatValue(180.0F)
-      .setFloatStep(5.0F)
-      .setMinFloatValue(0.0F)
-      .setMaxFloatValue(360.0F)
-      .build()
-      .getFloatValue();
    FloatValue bps = ValueBuilder.create(this, "BPS")
       .setDefaultFloatValue(10.0F)
       .setFloatStep(0.1F)
@@ -213,8 +199,6 @@ public class Scaffold extends Module {
    private boolean canBuildNow = true;
    private BlockPos lastC05Position;
    private int baseY = -1;
-   private int initialBlocks;
-   private boolean hudInitialized;
    private String aimBranch = "none";
    private boolean usedSkipTicks;
    private double lastHorizontalSpeed;
