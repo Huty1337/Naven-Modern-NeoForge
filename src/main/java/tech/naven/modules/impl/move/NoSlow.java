@@ -34,21 +34,6 @@ import net.minecraft.world.item.ItemUseAnimation;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.PotionItem;
 
-/**
- * 移植自 inject: naven/modules/impl/move/NoSlow.java (514 行)。
- *
- * <p>结构与 inject 完全一致：外层模块负责事件分派，内部两个状态机
- * {@link FullMode}（副手使用 + 主手有物品）与 {@link LegacyMode}（主手使用）互斥运行。
- *
- * <p>相对 inject 的唯一改动是 1.21.10 的 API 适配：
- * <ul>
- *   <li>{@code UseAnim} → {@code ItemUseAnimation}（1.21.8+ 改名，枚举常量不变）</li>
- *   <li>{@code ClientboundPingPacket / ClientboundKeepAlivePacket / ServerboundPongPacket}
- *       → {@code net.minecraft.network.protocol.common}（1.20.2+ 重组）</li>
- *   <li>{@code new ServerboundUseItemPacket(hand, seq)} → 4 参 {@code (hand, seq, yRot, xRot)}</li>
- *   <li>{@code stack.isEdible()} → {@code stack.has(DataComponents.FOOD)}</li>
- * </ul>
- */
 @ModuleInfo(
    name = "NoSlow",
    description = "NoSlowDown",
@@ -113,8 +98,6 @@ public class NoSlow extends Module {
 
    @EventTarget
    public void onSlowDown(EventSlowdown event) {
-      // 不再依赖 EventSlowdown（1.21.10 的钩点不可靠）：减速由 onMoveInput 的输入补偿抵消。
-      // 状态机只负责"反作弊绕过"（换手/排队/回放）。
       if (this.fullMode.isActive()) {
          this.fullMode.onSlowDown(event);
       } else {
@@ -124,8 +107,6 @@ public class NoSlow extends Module {
 
    @EventTarget
    public void onMoveInput(EventMoveInput event) {
-      // 输入补偿：原版使用物品时把 xxa/zza 乘 0.2，这里在输入被写回之前乘 5，
-      // 净值 1.0 —— 不依赖任何 mixin 钩点，1.21.10 上一定生效。
       if (mc.player != null && mc.player.isUsingItem() && !mc.player.isPassenger()) {
          event.setForward(event.getForward() * 5.0F);
          event.setStrafe(event.getStrafe() * 5.0F);
@@ -275,8 +256,6 @@ public class NoSlow extends Module {
          if (!NoSlow.this.isUsingConsumable()) {
             return;
          }
-
-         // 减速已由 onMoveInput 的输入补偿抵消，这里不再 setSlowdown，避免叠加成 5 倍速。
       }
 
       void onMoveInput(EventMoveInput event) {
@@ -482,7 +461,6 @@ public class NoSlow extends Module {
             }
          } else if (this.step == Step.EATING) {
             mc.player.setSprinting(true);
-            // 减速已由 onMoveInput 的输入补偿抵消，这里不再 setSlowdown。
          }
       }
 

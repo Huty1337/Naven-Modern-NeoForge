@@ -18,6 +18,8 @@ import tech.naven.events.impl.EventUseItemRayTrace;
 import tech.naven.modules.impl.combat.AimAssist;
 import tech.naven.modules.impl.combat.AttackCrystal;
 import tech.naven.modules.impl.combat.Aura;
+import tech.naven.modules.impl.combat.AutoThrow;
+import tech.naven.modules.impl.misc.AutoHelper;
 import tech.naven.modules.impl.move.AutoMLG;
 import tech.naven.modules.impl.move.LongJump;
 import tech.naven.modules.impl.move.Scaffold;
@@ -26,11 +28,8 @@ import tech.naven.utils.Vector2f;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket.PosRot;
 import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class RotationManager {
-   private static final Logger log = LogManager.getLogger(RotationManager.class);
    private static final Minecraft mc = Minecraft.getInstance();
    public static Vector2f rotations;
    public static Vector2f lastRotations;
@@ -57,14 +56,8 @@ public class RotationManager {
          AutoMLG autoMLG = (AutoMLG)Naven.getInstance().getModuleManager().getModule(AutoMLG.class);
          AimAssist aimAssist = (AimAssist)Naven.getInstance().getModuleManager().getModule(AimAssist.class);
          LongJump longJump = (LongJump)Naven.getInstance().getModuleManager().getModule(LongJump.class);
-         tech.naven.modules.impl.combat.AutoThrow autoThrow = (tech.naven.modules.impl.combat.AutoThrow)Naven
-            .getInstance()
-            .getModuleManager()
-            .getModule(tech.naven.modules.impl.combat.AutoThrow.class);
-         tech.naven.modules.impl.misc.AutoHelper autoHelper = (tech.naven.modules.impl.misc.AutoHelper)Naven
-            .getInstance()
-            .getModuleManager()
-            .getModule(tech.naven.modules.impl.misc.AutoHelper.class);
+         AutoThrow autoThrow = (AutoThrow)Naven.getInstance().getModuleManager().getModule(AutoThrow.class);
+         AutoHelper autoHelper = (AutoHelper)Naven.getInstance().getModuleManager().getModule(AutoHelper.class);
          active = true;
          if (autoMLG.isEnabled() && autoMLG.rotation) {
             setRotations(new Vector2f(mc.player.getYRot(), 90.0F));
