@@ -155,7 +155,6 @@ public class Scaffold extends Module {
       .build()
       .getBooleanValue();
    public BooleanValue renderItemSpoof = ValueBuilder.create(this, "Render Item Spoof").setDefaultBooleanValue(true).build().getBooleanValue();
-   public BooleanValue clutch = ValueBuilder.create(this, "Clutch").setDefaultBooleanValue(true).build().getBooleanValue();
    public BooleanValue onTickRot = ValueBuilder.create(this, "On Tick Rotation").setDefaultBooleanValue(false).build().getBooleanValue();
    FloatValue rotationSpeed = ValueBuilder.create(this, "Rotation Speed")
       .setDefaultFloatValue(180.0F)
@@ -178,13 +177,11 @@ public class Scaffold extends Module {
       .setMaxFloatValue(360.0F)
       .build()
       .getFloatValue();
-   public BooleanValue bpsLimit = ValueBuilder.create(this, "Limit BPS").setDefaultBooleanValue(false).build().getBooleanValue();
    FloatValue bps = ValueBuilder.create(this, "BPS")
       .setDefaultFloatValue(10.0F)
       .setFloatStep(0.1F)
       .setMinFloatValue(2.0F)
       .setMaxFloatValue(10.0F)
-      .setVisibility(() -> this.bpsLimit.getCurrentValue())
       .build()
       .getFloatValue();
    public BooleanValue keepFoV = ValueBuilder.create(this, "Keep FoV").setDefaultBooleanValue(true).build().getBooleanValue();
@@ -216,6 +213,9 @@ public class Scaffold extends Module {
    private boolean canBuildNow = true;
    private BlockPos lastC05Position;
    private int baseY = -1;
+   private int initialBlocks;
+   private boolean hudInitialized;
+   private String aimBranch = "none";
    private boolean usedSkipTicks;
    private double lastHorizontalSpeed;
 
@@ -360,10 +360,6 @@ public class Scaffold extends Module {
 
    @EventTarget(4)
    public void onMoveInput(EventMoveInput e) {
-      if (mc.player == null || !this.bpsLimit.getCurrentValue()) {
-         return;
-      }
-
       double limit = this.bps.getCurrentValue();
       if (limit >= 10.0) {
          return;
@@ -521,7 +517,7 @@ public class Scaffold extends Module {
       boolean knocked = airborne && (this.velocityDelay > 0 || mc.player.hurtTime > 0);
       boolean falling = airborne && mc.player.getDeltaMovement().y < -0.1;
       this.canBuildNow = true;
-      if (this.clutch.getCurrentValue() && hasBlocks && (falling || knocked)) {
+      if (hasBlocks && (falling || knocked)) {
          if (this.pos == null && knocked) {
             this.findClutchTarget();
          }
@@ -542,12 +538,14 @@ public class Scaffold extends Module {
          this.canBuildNow = true;
       }
 
-      if (this.clutch.getCurrentValue() && hasBlocks && (!this.canBuildNow || this.velocityDelay > 0 || mc.player.hurtTime > 0) && this.rotationDelay <= 8) {
+      if (hasBlocks && (!this.canBuildNow || this.velocityDelay > 0 || mc.player.hurtTime > 0) && this.rotationDelay <= 8) {
          Naven.skipTicks = Math.max(Naven.skipTicks, 1);
          this.usedSkipTicks = true;
          boolean useC06 = this.onTickRot.getCurrentValue() || !this.canBuildNow || this.pos == null;
          if (useC06) {
+            this.aimBranch = "C06-real-cam";
             this.rots.set(mc.player.getYRot(), mc.player.getXRot());
+            this.logLargeDelta(this.rots);
             this.rotationDelay++;
          } else {
             Vec3 targetVec = getFaceCenter(this.pos.position(), this.pos.facing());
@@ -578,7 +576,9 @@ public class Scaffold extends Module {
          boolean wasInRescue = this.rotationDelay > 0;
          this.rotationDelay = 0;
          if (wasInRescue) {
+            this.aimBranch = "resume-jitter";
             Vector2f resumeRot = new Vector2f(mc.player.getYRot() + rotationJitter(), mc.player.getXRot() + rotationJitter());
+            this.logLargeDelta(resumeRot);
             NetworkUtils.sendPacketNoEvent(
                new ServerboundMovePlayerPacket.PosRot(
                   mc.player.getX(),
@@ -593,7 +593,9 @@ public class Scaffold extends Module {
          }
 
          if (this.onTickRot.getCurrentValue()) {
+            this.aimBranch = "C06-real-cam";
             this.rots.set(mc.player.getYRot(), mc.player.getXRot());
+            this.logLargeDelta(this.rots);
          } else {
             this.calculateTargetRotation();
          }
@@ -654,7 +656,7 @@ public class Scaffold extends Module {
          eye = mc.player.getEyePosition().add(mc.player.getDeltaMovement().multiply(2.0, 2.0, 2.0));
       }
 
-      if (this.clutch.getCurrentValue() && mc.player.getDeltaMovement().y < 0.01) {
+      if (mc.player.getDeltaMovement().y < 0.01) {
          FallingPlayer sim = new FallingPlayer(mc.player);
          sim.calculate(2);
          eye = new Vec3(eye.x, Math.max(sim.getEyePos().y, eye.y), eye.z);
@@ -831,34 +833,40 @@ public class Scaffold extends Module {
       float currentPitch = this.rots.getY();
       this.correctRotation.set(yaw, idealPitch);
 
+      this.aimBranch = "ideal-75.5";
       if (this.isRotationValidForPlacement(new Vector2f(yaw, idealPitch))) {
          this.applyRotationWithSpeed(yaw, idealPitch);
          return;
       }
 
+      this.aimBranch = "keep-current";
       if (this.isRotationValidForPlacement(new Vector2f(yaw, currentPitch))) {
          this.applyRotationWithSpeed(yaw, currentPitch);
          return;
       }
 
+      this.aimBranch = "nearest-from-current";
       Float nearest = this.findValidPitchNear(yaw, currentPitch);
       if (nearest != null) {
          this.applyRotationWithSpeed(yaw, nearest);
          return;
       }
 
+      this.aimBranch = "nearest-to-ideal";
       Float towardIdeal = this.findValidPitchNear(yaw, idealPitch);
       if (towardIdeal != null) {
          this.applyRotationWithSpeed(yaw, towardIdeal);
          return;
       }
 
+      this.aimBranch = "optimal-search";
       Vector2f optimal = this.findOptimalRotation(yaw);
       if (optimal != null) {
          this.applyRotationWithSpeed(optimal.getX(), optimal.getY());
          return;
       }
 
+      this.aimBranch = "hold";
       this.applyRotationWithSpeed(yaw, currentPitch);
    }
 
@@ -926,7 +934,11 @@ public class Scaffold extends Module {
       targetPitch = quantized.getY();
 
       Vector2f result = new Vector2f(targetYaw, targetPitch);
+      this.logLargeDelta(result);
       this.rots.set(result.getX(), result.getY());
+   }
+
+   private void logLargeDelta(Vector2f rotation) {
    }
 
    private boolean hasPlaceableInHand() {
@@ -1037,8 +1049,9 @@ public class Scaffold extends Module {
       }
 
       InteractionHand hand = this.placementHand();
-      if (!this.canBuildNow && this.clutch.getCurrentValue() && !this.pos.position().equals(this.lastC05Position)) {
+      if (!this.canBuildNow && !this.pos.position().equals(this.lastC05Position)) {
          this.lastC05Position = this.pos.position();
+         this.aimBranch = "c05-snap";
          Vec3 c05Target = getFaceCenter(this.pos.position(), this.pos.facing());
          Vec3 c05Eye = new Vec3(
             mc.player.getX() + mc.player.getDeltaMovement().x,
@@ -1046,6 +1059,7 @@ public class Scaffold extends Module {
             mc.player.getZ() + mc.player.getDeltaMovement().z
          );
          Rotation c05Rotation = new Rotation(c05Eye, c05Target);
+         this.logLargeDelta(new Vector2f(c05Rotation.getYaw(), c05Rotation.getPitch()));
          float yaw = c05Rotation.getYaw();
          if (yaw > -360.0F && yaw < 360.0F) {
             yaw += 720.0F;
