@@ -13,7 +13,7 @@ import tech.naven.utils.TimeHelper;
 import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
 
 @ModuleInfo(
-   name = "Helper",
+   name = "BedWarsHelper",
    description = "Bed wars Info helper",
    category = Category.MISC
 )

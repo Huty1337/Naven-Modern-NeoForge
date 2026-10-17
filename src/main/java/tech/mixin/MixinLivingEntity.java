@@ -4,6 +4,7 @@ import tech.naven.Naven;
 import tech.naven.events.impl.EventFallFlying;
 import tech.naven.events.impl.EventJump;
 import tech.naven.events.impl.EventRotationAnimation;
+import tech.naven.events.impl.EventSlowdown;
 import tech.naven.modules.impl.render.AntiNausea;
 import tech.naven.modules.impl.render.FullBright;
 import net.minecraft.client.Minecraft;

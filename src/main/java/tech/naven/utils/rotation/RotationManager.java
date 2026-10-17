@@ -57,6 +57,14 @@ public class RotationManager {
          AutoMLG autoMLG = (AutoMLG)Naven.getInstance().getModuleManager().getModule(AutoMLG.class);
          AimAssist aimAssist = (AimAssist)Naven.getInstance().getModuleManager().getModule(AimAssist.class);
          LongJump longJump = (LongJump)Naven.getInstance().getModuleManager().getModule(LongJump.class);
+         tech.naven.modules.impl.combat.AutoThrow autoThrow = (tech.naven.modules.impl.combat.AutoThrow)Naven
+            .getInstance()
+            .getModuleManager()
+            .getModule(tech.naven.modules.impl.combat.AutoThrow.class);
+         tech.naven.modules.impl.misc.AutoHelper autoHelper = (tech.naven.modules.impl.misc.AutoHelper)Naven
+            .getInstance()
+            .getModuleManager()
+            .getModule(tech.naven.modules.impl.misc.AutoHelper.class);
          active = true;
          if (autoMLG.isEnabled() && autoMLG.rotation) {
             setRotations(new Vector2f(mc.player.getYRot(), 90.0F));
@@ -66,6 +74,10 @@ public class RotationManager {
             setRotations(new Vector2f(AttackCrystal.rotations.x, AttackCrystal.rotations.y));
          } else if (scaffold.isEnabled() && scaffold.rots != null) {
             setRotations(new Vector2f(scaffold.rots.x, scaffold.rots.y));
+         } else if (autoHelper.isEnabled() && autoHelper.rotation != null) {
+            setRotations(new Vector2f(autoHelper.rotation.x, autoHelper.rotation.y));
+         } else if (autoThrow.isEnabled() && autoThrow.rotation != null) {
+            setRotations(new Vector2f(autoThrow.rotation.getX(), autoThrow.rotation.getY()));
          } else if (aura.isEnabled() && Aura.target != null && Aura.rotation != null) {
             setRotations(new Vector2f(Aura.rotation.x, Aura.rotation.y));
          } else if (!aimAssist.isEnabled() || !aimAssist.working) {
