@@ -19,7 +19,7 @@ import tech.naven.modules.impl.combat.AimAssist;
 import tech.naven.modules.impl.combat.AttackCrystal;
 import tech.naven.modules.impl.combat.Aura;
 import tech.naven.modules.impl.combat.AutoThrow;
-import tech.naven.modules.impl.misc.AutoHelper;
+import tech.naven.modules.impl.misc.Helper;
 import tech.naven.modules.impl.move.AutoMLG;
 import tech.naven.modules.impl.move.LongJump;
 import tech.naven.modules.impl.move.Scaffold;
@@ -57,7 +57,7 @@ public class RotationManager {
          AimAssist aimAssist = (AimAssist)Naven.getInstance().getModuleManager().getModule(AimAssist.class);
          LongJump longJump = (LongJump)Naven.getInstance().getModuleManager().getModule(LongJump.class);
          AutoThrow autoThrow = (AutoThrow)Naven.getInstance().getModuleManager().getModule(AutoThrow.class);
-         AutoHelper autoHelper = (AutoHelper)Naven.getInstance().getModuleManager().getModule(AutoHelper.class);
+         Helper helper = (Helper)Naven.getInstance().getModuleManager().getModule(Helper.class);
          active = true;
          if (autoMLG.isEnabled() && autoMLG.rotation) {
             setRotations(new Vector2f(mc.player.getYRot(), 90.0F));
@@ -67,8 +67,8 @@ public class RotationManager {
             setRotations(new Vector2f(AttackCrystal.rotations.x, AttackCrystal.rotations.y));
          } else if (scaffold.isEnabled() && scaffold.rots != null) {
             setRotations(new Vector2f(scaffold.rots.x, scaffold.rots.y));
-         } else if (autoHelper.isEnabled() && autoHelper.rotation != null) {
-            setRotations(new Vector2f(autoHelper.rotation.x, autoHelper.rotation.y));
+         } else if (helper.isEnabled() && helper.rotation != null) {
+            setRotations(new Vector2f(helper.rotation.x, helper.rotation.y));
          } else if (autoThrow.isEnabled() && autoThrow.rotation != null) {
             setRotations(new Vector2f(autoThrow.rotation.getX(), autoThrow.rotation.getY()));
          } else if (aura.isEnabled() && Aura.target != null && Aura.rotation != null) {

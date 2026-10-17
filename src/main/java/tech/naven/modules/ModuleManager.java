@@ -11,7 +11,7 @@ import tech.naven.modules.impl.combat.AttackCrystal;
 import tech.naven.modules.impl.combat.Aura;
 import tech.naven.modules.impl.combat.AutoThrow;
 import tech.naven.modules.impl.combat.AutoClicker;
-import tech.naven.modules.impl.combat.Critical;
+import tech.naven.modules.impl.combat.Criticals;
 import tech.naven.modules.impl.combat.GhostHand;
 import tech.naven.modules.impl.combat.MidPearl;
 import tech.naven.modules.impl.combat.Velocity;
@@ -89,7 +89,7 @@ public class ModuleManager {
    private void initModules() {
       this.registerModule(
          new Aura(),
-         new Critical(),
+         new Criticals(),
          new AutoThrow(),
          new MidPearl(),
          new Animations(),

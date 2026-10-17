@@ -7,7 +7,7 @@ import tech.naven.events.impl.EventUpdateHeldItem;
 import tech.naven.modules.Category;
 import tech.naven.modules.Module;
 import tech.naven.modules.ModuleInfo;
-import tech.naven.modules.impl.misc.AutoHelper;
+import tech.naven.modules.impl.misc.Helper;
 import tech.naven.modules.impl.misc.PearlPrediction;
 import tech.naven.modules.impl.misc.Teams;
 import tech.naven.modules.impl.move.AutoMLG;
@@ -112,7 +112,7 @@ public class AutoThrow extends Module {
       LongJump longJump = (LongJump)Naven.getInstance().getModuleManager().getModule(LongJump.class);
       AttackCrystal attackCrystal = (AttackCrystal)Naven.getInstance().getModuleManager().getModule(AttackCrystal.class);
       Aura aura = (Aura)Naven.getInstance().getModuleManager().getModule(Aura.class);
-      AutoHelper autoHelper = (AutoHelper)Naven.getInstance().getModuleManager().getModule(AutoHelper.class);
+      Helper helper = (Helper)Naven.getInstance().getModuleManager().getModule(Helper.class);
       PearlPrediction pearlPrediction = (PearlPrediction)Naven.getInstance().getModuleManager().getModule(PearlPrediction.class);
       if (scaffold != null && scaffold.isEnabled() || stuck != null && stuck.isEnabled() || blink != null && blink.isEnabled()) {
          this.cancelThrow(false);
@@ -123,7 +123,7 @@ public class AutoThrow extends Module {
          || longJump != null && longJump.isEnabled() && LongJump.rotation != null
          || attackCrystal != null && attackCrystal.isEnabled() && AttackCrystal.rotations != null
          || aura != null && aura.isEnabled() && Aura.target != null && Aura.rotation != null
-         || autoHelper != null && autoHelper.isEnabled() && autoHelper.rotation != null
+         || helper != null && helper.isEnabled() && helper.rotation != null
          || pearlPrediction != null && pearlPrediction.isEnabled() && PearlPrediction.isThrowing && PearlPrediction.rotations != null) {
          this.cancelThrow(false);
          return;

@@ -19,11 +19,11 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 @ModuleInfo(
-   name = "Critical",
+   name = "Criticals",
    description = "Critical Hit Target",
    category = Category.COMBAT
 )
-public class Critical extends Module {
+public class Criticals extends Module {
    FloatValue range = ValueBuilder.create(this, "Critical Range")
       .setDefaultFloatValue(3.0F)
       .setFloatStep(0.1F)
